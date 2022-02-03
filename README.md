@@ -1,6 +1,8 @@
 # Cljk - Jekyll manager in Clojure
 
-## USAGE
+Like gulp/grunt but for Jekyll
+
+## Usage
 
 0. install babashka 
    ```bash
