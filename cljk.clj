@@ -18,10 +18,14 @@
 
 (require '[clojure.tools.cli :refer [parse-opts]])
 (require '[clojure.string :as string])
+(require '[babashka.process :as p])
 (import 'java.time.format.DateTimeFormatter
         'java.time.LocalDateTime)
 
-(defn long-str [& strings] (string/join "\n" strings))
+(defn long-str
+  "Join all string arguments together."
+  [& strings]
+  (string/join "\n" strings))
 
 (def date
   "Current date-time."
@@ -63,17 +67,6 @@
              :date (format-date year-formatter)
              :categories "how"}))
 
-(def cli-options
-  "CLI options for usage."
-  [["-t" "--title TITLE" "New Post Title"
-    :default "undefined"
-    :validate [#(= (type %) java.lang.String) "Must be a string"]]
-   ["-e" "--ext EXTENSION" "File extension"
-    :default ".md"
-    :validate [#(clojure.string/starts-with? % ".")
-               "Must be a file extension starting with `.`"]]
-   ["-h" "--help" "Display the help message"]])
-
 (defn post-filename
   "Create the new filename for the post."
   [title ext]
@@ -91,17 +84,67 @@
    (post-filename title ext)
    (post-template title)))
 
-;; main
-(let [{:keys [options summary errors] _ :arguments}
-      (parse-opts *command-line-args* cli-options)]
-  (when errors
-    (println (string/join "\n" errors))
-    (System/exit 1))
-  (if (true? (:help options))
-    (println (long-str
-              "Usage: cljk.clj -t \"Post Title\"\n"
-              "Create a new post named according to the following format:"
-              "YEAR-MONTH-DAY-title.EXTENSION"
-              "\nFlags:"
-              summary))
-    (create-post options)))
+(def cli-options
+  "CLI options for print the USAGE."
+  [["-t"
+    "--title TITLE"
+    "New Post Title"
+    :default "undefined"
+    :validate [#(= (type %) java.lang.String) "Must be a string"]]
+   ["-e"
+    "--ext EXTENSION"
+    "File extension"
+    :default ".md"
+    :validate [#(clojure.string/starts-with? % ".")
+               "Must be a file extension starting with `.`"]]
+   ["-h"
+    "--help"
+    "Display the help message"]])
+
+(defn usage [options-summary]
+  (->> ["This is my program. There are many like it, but this one is mine."
+        ""
+        "Usage: cljk.clj [options] action"
+        ""
+        "Options:"
+        options-summary
+        ""
+        "Actions:"
+        "  serve    Run jekyll serve"
+        "  new      Create a new post with title -t, according to the following format:"
+        "           YEAR-MONTH-DAY-title.EXTENSION"
+        ""
+        "Please refer to the https://github.com/elias94/cljk for more information."]
+       (string/join \newline)))
+
+(defn error-msg
+  "Format error message."
+  [errors]
+  (str "The following errors occurred while parsing your command:\n\n"
+       (string/join \newline errors)))
+
+(defn validate-args
+  []
+  (let [{:keys [options arguments summary errors]} (parse-opts *command-line-args* cli-options)]
+    (cond
+      (true? (:help options))
+      {:exit-message (usage summary) :ok? true}
+      errors
+      {:exit-message (error-msg errors)}
+      (and (= 1 (count arguments))
+           (#{"serve" "new"} (first arguments)))
+      {:action (first arguments) :options options}
+      :else
+      (create-post options))))
+
+(def run-jekyll
+  ["bundle" "exec" "jekyll" "serve" "--host=0.0.0.0" "--trace"])
+
+;; Main
+(let [{:keys [action options exit-message ok?]} (validate-args)]
+    (if exit-message
+      (System/exit (if ok? 0 1))
+      (case action
+        "serve" @(p/process run-jekyll {:inherit true
+                                        :shutdown p/destroy-tree})
+        "new"   (create-post options))))
