@@ -9,7 +9,7 @@ Like gulp/grunt but for Jekyll
    bash < <(curl -s https://raw.githubusercontent.com/babashka/babashka/master/install)
    ```
 1. add `cljk.clj` into your jekyll dir
-2. `chmnod +x cljk.clj`
+2. `chmod +x cljk.clj`
 3. run `./cljk.clj` from that directory
 
 ## Options
