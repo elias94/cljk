@@ -1,6 +1,9 @@
 # Cljk - Jekyll manager in Clojure
 
-Like gulp/grunt but for Jekyll
+Like npm but for Jekyll
+
+- run `./cljk.clj serve` for run jekyll serve
+- run `./cljk.clj new -t "post title"` for a new post
 
 ## Usage
 
