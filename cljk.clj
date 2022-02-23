@@ -18,7 +18,7 @@
 
 (require '[clojure.tools.cli :refer [parse-opts]])
 (require '[clojure.string :as string])
-(require '[babashka.process :as p])
+(require '[babashka.tasks :refer [shell]])
 (import 'java.time.format.DateTimeFormatter
         'java.time.LocalDateTime)
 
@@ -137,14 +137,10 @@
       :else
       (create-post options))))
 
-(def run-jekyll
-  ["bundle" "exec" "jekyll" "serve" "--host=0.0.0.0" "--trace"])
-
 ;; Main
 (let [{:keys [action options exit-message ok?]} (validate-args)]
     (if exit-message
       (System/exit (if ok? 0 1))
       (case action
-        "serve" @(p/process run-jekyll {:inherit true
-                                        :shutdown p/destroy-tree})
+        "serve" @(shell "bundle exec jekyll serve --host=0.0.0.0 --trace")
         "new"   (create-post options))))
