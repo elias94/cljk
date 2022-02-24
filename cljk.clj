@@ -102,19 +102,19 @@
     "Display the help message"]])
 
 (defn usage [options-summary]
-  (->> ["This is my program. There are many like it, but this one is mine."
+  (->> ["Cljk - Jekyll manager in Clojure."
         ""
-        "Usage: cljk.clj [options] action"
+        "Usage: cljk.clj action [options]"
         ""
         "Options:"
         options-summary
         ""
         "Actions:"
-        "  serve    Run jekyll serve"
+        "  serve    Run server with Jekyll"
         "  new      Create a new post with title -t, according to the following format:"
         "           YEAR-MONTH-DAY-title.EXTENSION"
         ""
-        "Please refer to the https://github.com/elias94/cljk for more information."]
+        "See https://github.com/elias94/cljk for more information."]
        (string/join \newline)))
 
 (defn error-msg
@@ -137,10 +137,17 @@
       :else
       (create-post options))))
 
+(defn exit [status msg]
+  (println msg)
+  (System/exit status))
+
 ;; Main
 (let [{:keys [action options exit-message ok?]} (validate-args)]
-    (if exit-message
-      (System/exit (if ok? 0 1))
-      (case action
-        "serve" @(shell "bundle exec jekyll serve --host=0.0.0.0 --trace")
-        "new"   (create-post options))))
+  (cond exit-message
+        (exit (if ok? 0 1) exit-message)
+        (nil? action)
+        (exit 1 "ERROR: No action provided. Use -h to print the usage.")
+        :else
+        (case action
+          "serve" @(shell "bundle exec jekyll serve --host=0.0.0.0 --trace")
+          "new"   (create-post options))))
