@@ -133,9 +133,7 @@
       {:exit-message (error-msg errors)}
       (and (= 1 (count arguments))
            (#{"serve" "new"} (first arguments)))
-      {:action (first arguments) :options options}
-      :else
-      (create-post options))))
+      {:action (first arguments) :options options})))
 
 (defn exit [status msg]
   (println msg)
@@ -150,4 +148,5 @@
         :else
         (case action
           "serve" @(shell "bundle exec jekyll serve --host=0.0.0.0 --trace")
-          "new"   (create-post options))))
+          "new"   (create-post options)
+          nil)))
